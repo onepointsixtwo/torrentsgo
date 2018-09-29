@@ -8,7 +8,7 @@ import (
 // TYPES
 
 type MetaInfo struct {
-	AnnounceUrls []url.URL
+	AnnounceUrls []*url.URL
 	CreationDate time.Time
 	Comment      string
 	CreatedBy    string
@@ -38,7 +38,7 @@ type File struct {
 
 // INITIALISATION
 
-func NewMetaInfo(announceUrls []url.URL,
+func NewMetaInfo(announceUrls []*url.URL,
 	creationDate time.Time,
 	comment string,
 	createdBy string,
