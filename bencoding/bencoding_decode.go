@@ -36,16 +36,15 @@ func readValue(reader io.Reader) (interface{}, error) {
 	}
 
 	switch firstCharacter {
-	case "i":
+	case INTEGER:
 		return readIntegerValue(reader)
-	case "l":
+	case LIST:
 		return readListValue(reader)
-	case "d":
+	case DICTIONARY:
 		return decodeDictionary(reader)
-	case "e":
+	case END:
 		return nil, io.EOF
 	default:
-		// Default to attempting to read a string value
 		return readStringValue(reader, firstCharacter)
 	}
 }
@@ -83,7 +82,17 @@ func readDictionaryPair(reader io.Reader) (string, interface{}, error) {
 }
 
 func readDictionaryKey(reader io.Reader) (string, error) {
-	return readStringValue(reader, "")
+	value, err := readValue(reader)
+	if err != nil {
+		return "", err
+	}
+
+	strVal, ok := value.(string)
+	if !ok {
+		return "", fmt.Errorf("Failed to read dictionary key - value is not string %v", value)
+	}
+
+	return strVal, nil
 }
 
 // String decoding
@@ -169,5 +178,6 @@ func readLengthAsBytes(reader io.Reader, length int) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return b[:n], nil
+	bytesRead := b[:n]
+	return bytesRead, nil
 }
