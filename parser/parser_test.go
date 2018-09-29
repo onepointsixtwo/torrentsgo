@@ -12,11 +12,17 @@ func TestWithSingleFileTorrentFile(t *testing.T) {
 		return
 	}
 
-	_, err := ParseMetaInfo(reader)
+	metaInfo, err := ParseMetaInfo(reader)
 	if err != nil {
 		t.Errorf("Unexpected error parsing meta info file %v", err)
 	}
 
+	announce := metaInfo.AnnounceUrls[0]
+	if announce.String() != "http://linuxtracker.org:2710/00000000000000000000000000000000/announce" {
+		t.Errorf("Unexpected announce URL found for single file torrent announce: %v", announce)
+	}
+
+	//TODO: also check the creation date, encoding, and info (length, files (zeroth only) and private)
 }
 
 func TestWithMultiFileTorrentFile(t *testing.T) {
@@ -26,8 +32,15 @@ func TestWithMultiFileTorrentFile(t *testing.T) {
 		return
 	}
 
-	_, err := ParseMetaInfo(reader)
+	metaInfo, err := ParseMetaInfo(reader)
 	if err != nil {
 		t.Errorf("Unexpected error parsing meta info file %v", err)
 	}
+
+	announce := metaInfo.AnnounceUrls[0]
+	if announce.String() != "http://legittorrents.info:2710/announce" {
+		t.Errorf("Unexpected announce URL found for single file torrent announce: %v", announce)
+	}
+
+	//TODO: check remaining contents of meta info dictionary
 }

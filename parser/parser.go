@@ -6,6 +6,7 @@ import (
 	"github.com/onepointsixtwo/torrentsgo/model"
 	"io"
 	"net/url"
+	"reflect"
 	"time"
 )
 
@@ -132,7 +133,7 @@ func parseFilesFromDecodedInfoData(infoData map[string]interface{}) ([]*model.Fi
 }
 
 func parseSingleFileModeFilesFromDecodedInfoData(infoData map[string]interface{}) ([]*model.File, error) {
-	file, err := parseFileFromMap(infoData, "name")
+	file, err := parseFileFromOuterMap(infoData)
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +144,7 @@ func parseSingleFileModeFilesFromDecodedInfoData(infoData map[string]interface{}
 }
 
 func parseMultiFileModeFilesFromDecodedInfoData(infoData map[string]interface{}) ([]*model.File, error) {
-	filesList, err := readListOfDictionariesValueFromMap(infoData, "files")
+	filesList, err := readListFromMap(infoData, "files")
 	if err != nil {
 		return nil, err
 	}
@@ -151,8 +152,13 @@ func parseMultiFileModeFilesFromDecodedInfoData(infoData map[string]interface{})
 	filesLength := len(filesList)
 	files := make([]*model.File, 0)
 	for i := 0; i < filesLength; i++ {
-		dict := filesList[i]
-		file, err := parseFileFromMap(dict, "path")
+		maybeDict := filesList[i]
+		dict, ok := maybeDict.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		file, err := parseFileFromFilesMap(dict)
 		if err == nil {
 			files = append(files, file)
 		}
@@ -165,18 +171,57 @@ func parseMultiFileModeFilesFromDecodedInfoData(infoData map[string]interface{})
 	}
 }
 
-func parseFileFromMap(mp map[string]interface{}, pathName string) (*model.File, error) {
-	fileName, err := readStringValueFromMap(mp, pathName)
+func parseFileFromOuterMap(mp map[string]interface{}) (*model.File, error) {
+	fileName, err := readStringValueFromMap(mp, "name")
 	if err != nil {
 		return nil, err
 	}
 	length, err2 := readIntValueFromMap(mp, "length")
-	if err != nil {
+	if err2 != nil {
 		return nil, err2
 	}
 	md5Sum, _ := readStringValueFromMap(mp, "md5sum")
 
 	return model.NewFile(fileName, length, md5Sum), nil
+}
+
+func parseFileFromFilesMap(mp map[string]interface{}) (*model.File, error) {
+	pathList, pathErr := readListFromMap(mp, "path")
+	if pathErr != nil {
+		return nil, pathErr
+	}
+	path, pathStrErr := getFilePathFromList(pathList)
+	if pathStrErr != nil {
+		return nil, pathErr
+	}
+	length, err2 := readIntValueFromMap(mp, "length")
+	if err2 != nil {
+		return nil, err2
+	}
+	md5Sum, _ := readStringValueFromMap(mp, "md5sum")
+
+	return model.NewFile(path, length, md5Sum), nil
+}
+
+func getFilePathFromList(list []interface{}) (string, error) {
+	path := ""
+
+	pathLength := len(list)
+	for i := 0; i < pathLength; i++ {
+		if i != 0 {
+			path = path + "/"
+		}
+
+		value := list[i]
+		strValue, ok := value.(string)
+		if !ok {
+			return "", fmt.Errorf("Value %v cannot be represented as string", value)
+		}
+
+		path = path + strValue
+	}
+
+	return path, nil
 }
 
 func parseDirectoryNameFromDecodedInfoData(infoData map[string]interface{}) (string, error) {
@@ -233,15 +278,15 @@ func readBytesValueFromMap(m map[string]interface{}, key string) ([]byte, error)
 	return []byte(str), nil
 }
 
-func readListOfDictionariesValueFromMap(m map[string]interface{}, key string) ([]map[string]interface{}, error) {
+func readListFromMap(m map[string]interface{}, key string) ([]interface{}, error) {
 	value, exists := m[key]
 	if !exists {
 		return nil, fmt.Errorf("List of dictionaries value not found in map for key %v", key)
 	}
 
-	castedValue, ok := value.([]map[string]interface{})
+	castedValue, ok := value.([]interface{})
 	if !ok {
-		return nil, fmt.Errorf("Unable to cast value %v to []map[string]interface{}", value)
+		return nil, fmt.Errorf("Unable to cast value %v to []map[string]interface{} (type is %v)", value, reflect.TypeOf(value))
 	}
 
 	return castedValue, nil
