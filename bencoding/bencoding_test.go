@@ -75,6 +75,60 @@ func TestReadingValidBencodedFile(t *testing.T) {
 	}
 }
 
+// Read Value tests
+
+func TestReadValueInteger(t *testing.T) {
+	simpleIntegerReader := mock.NewMockStringReader("i124e")
+	intVal, err := readValue(simpleIntegerReader)
+	if err != nil {
+		t.Errorf("Error while reading integer value %v", err)
+	}
+	if intVal != 124 {
+		t.Errorf("Integer value should have been 124 but was %v", intVal)
+	}
+}
+
+func TestReadValueString(t *testing.T) {
+	stringReader := mock.NewMockStringReader("10:TestString")
+	strVal, err := readValue(stringReader)
+	if err != nil {
+		t.Errorf("Error while reading string value %v", err)
+	}
+	if strVal != "TestString" {
+		t.Errorf("Expected string value read to be 'TestString' but was '%v'", strVal)
+	}
+}
+
+func TestReadValueList(t *testing.T) {
+	simpleListReader := mock.NewMockStringReader("l2:to1:ae")
+	simpleListValue, err := readValue(simpleListReader)
+	if err != nil {
+		t.Errorf("Simple list value error: %v", err)
+	}
+	simpleListValueCast, ok := simpleListValue.([]interface{})
+	if !ok {
+		t.Errorf("Unable to cast simple list value to list")
+	}
+	if simpleListValueCast[0] != "to" || simpleListValueCast[1] != "a" {
+		t.Errorf("Expected list to be {'to', 'a'} but was {'%v', '%v'}", simpleListValueCast[0], simpleListValueCast[1])
+	}
+}
+
+func TestReadValueDictionary(t *testing.T) {
+	simpleDictReader := mock.NewMockStringReader("d2:to1:ae")
+	dictVal, err := readValue(simpleDictReader)
+	if err != nil {
+		t.Errorf("Simple dict value error: %v", err)
+	}
+	dictValCast, ok2 := dictVal.(map[string]interface{})
+	if !ok2 {
+		t.Errorf("Unable to cast dict value to map[string]interface{}")
+	}
+	if dictValCast["to"] != "a" {
+		t.Errorf("Expected dictionary to contain a single mapping of to:a but was %v", dictValCast)
+	}
+}
+
 // Helper tests
 
 func TestReadLengthAsString(t *testing.T) {
