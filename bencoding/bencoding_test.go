@@ -10,7 +10,7 @@ import (
 // Entire file read test
 
 func TestReadingValidBencodedFile(t *testing.T) {
-	reader, fileErr := os.Open("./linux_test_torrent.torrent")
+	reader, fileErr := os.Open("../mock/linux_test_torrent.torrent")
 	if fileErr != nil {
 		t.Errorf("Cannot run test - failed to read file %v", fileErr)
 	}
