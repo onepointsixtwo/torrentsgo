@@ -179,6 +179,9 @@ func readLengthAsBytes(reader io.Reader, length int) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	if n != length {
+		return nil, fmt.Errorf("Tried to read %v bytes but only read %v", length, n)
+	}
 	bytesRead := b[:n]
 	return bytesRead, nil
 }
