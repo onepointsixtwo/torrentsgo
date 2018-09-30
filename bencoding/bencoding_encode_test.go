@@ -8,7 +8,7 @@ import (
 )
 
 func TestEncoding(t *testing.T) {
-	fileName := "../mock/linux_test_torrent.torrent"
+	fileName := "../testresources/single-file.torrent"
 	reader, fileErr := os.Open(fileName)
 	if fileErr != nil {
 		t.Errorf("Cannot run test - failed to read file %v", fileErr)

@@ -6,7 +6,7 @@ import (
 )
 
 func TestWithSingleFileTorrentFile(t *testing.T) {
-	reader, fileErr := os.Open("../mock/linux_test_torrent.torrent")
+	reader, fileErr := os.Open("../testresources/single-file.torrent")
 	if fileErr != nil {
 		t.Errorf("Cannot run test - failed to read file %v", fileErr)
 		return
@@ -72,7 +72,7 @@ func TestWithSingleFileTorrentFile(t *testing.T) {
 }
 
 func TestWithMultiFileTorrentFile(t *testing.T) {
-	reader, fileErr := os.Open("../mock/multi-file.torrent")
+	reader, fileErr := os.Open("../testresources/multi-file.torrent")
 	if fileErr != nil {
 		t.Errorf("Cannot run test - failed to read file %v", fileErr)
 		return
