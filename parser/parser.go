@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"crypto/sha1"
 	"fmt"
 	"github.com/onepointsixtwo/torrentsgo/bencoding"
 	"github.com/onepointsixtwo/torrentsgo/model"
@@ -91,6 +92,11 @@ func parseInfoFromDecodedData(data *model.OrderedMap) (*model.Info, error) {
 		return nil, err
 	}
 
+	hash, hashErr := hashFromInfoDictionary(infoData)
+	if hashErr != nil {
+		return nil, hashErr
+	}
+
 	pieceLength, errPieceLength := parsePieceLengthFromDecodedInfoData(infoData)
 	if errPieceLength != nil {
 		return nil, errPieceLength
@@ -109,7 +115,18 @@ func parseInfoFromDecodedData(data *model.OrderedMap) (*model.Info, error) {
 		return nil, directoryNameError
 	}
 
-	return model.NewInfo(pieceLength, pieces, private, files, directoryName), nil
+	return model.NewInfo(pieceLength, pieces, private, files, directoryName, hash), nil
+}
+
+func hashFromInfoDictionary(data *model.OrderedMap) ([]byte, error) {
+	bytes, encodingErr := bencoding.EncodeBencoding(data)
+	if encodingErr != nil {
+		return nil, encodingErr
+	}
+
+	hash := sha1.New()
+	hash.Write(bytes)
+	return hash.Sum(nil), nil
 }
 
 func parsePieceLengthFromDecodedInfoData(infoData *model.OrderedMap) (int, error) {

@@ -28,6 +28,7 @@ type Info struct {
 	Private       int
 	Files         []*File
 	DirectoryName string
+	Hash          []byte
 }
 
 type File struct {
@@ -51,8 +52,9 @@ func NewInfo(pieceLength int,
 	pieces []byte,
 	private int,
 	files []*File,
-	directoryName string) *Info {
-	return &Info{pieceLength, pieces, private, files, directoryName}
+	directoryName string,
+	hash []byte) *Info {
+	return &Info{pieceLength, pieces, private, files, directoryName, hash}
 }
 
 func NewFile(path string, length int, md5Sum string) *File {
