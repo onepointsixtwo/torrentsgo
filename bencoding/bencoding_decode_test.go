@@ -3,6 +3,7 @@ package bencoding
 import (
 	"bytes"
 	"github.com/onepointsixtwo/torrentsgo/mock"
+	"github.com/onepointsixtwo/torrentsgo/model"
 	"os"
 	"testing"
 )
@@ -20,52 +21,52 @@ func TestReadingValidBencodedFile(t *testing.T) {
 		t.Errorf("Error reading bencoded data '%v'", err)
 	}
 
-	announce := decoded["announce"]
+	announce := decoded.Get("announce")
 	if announce != "http://linuxtracker.org:2710/00000000000000000000000000000000/announce" {
 		t.Errorf("Announce key should have held url value but was '%v'", announce)
 	}
 
-	creationDate := decoded["creation date"]
+	creationDate := decoded.Get("creation date")
 	if creationDate != 1537299287 {
 		t.Errorf("Expected creation date to be 1537299287 but was %v", creationDate)
 	}
 
-	encoding := decoded["encoding"]
+	encoding := decoded.Get("encoding")
 	if encoding != "UTF-8" {
 		t.Errorf("Expected encoding to be 'UTF-8' but was '%v'", encoding)
 	}
 
-	infoMapUncast := decoded["info"]
-	var infoMap map[string]interface{}
+	infoMapUncast := decoded.Get("info")
+	var infoMap *model.OrderedMap
 	switch v := infoMapUncast.(type) {
-	case map[string]interface{}:
+	case *model.OrderedMap:
 		infoMap = v
 	default:
 		t.Errorf("Expected info map type to be map[string]interface{} but was %v", v)
 		return
 	}
 
-	length := infoMap["length"]
+	length := infoMap.Get("length")
 	if length != 1637744640 {
 		t.Errorf("Expected length to be 1637744640 but read out '%v'", length)
 	}
 
-	name := infoMap["name"]
+	name := infoMap.Get("name")
 	if name != "Reborn-OS-2018.09.17-x86_64.iso" {
 		t.Errorf("Read out unexpected name from info dictionary '%v'", name)
 	}
 
-	pieceLength := infoMap["piece length"]
+	pieceLength := infoMap.Get("piece length")
 	if pieceLength != 1048576 {
 		t.Errorf("Expected piece length to be 1048576 but was %v", pieceLength)
 	}
 
-	private := infoMap["private"]
+	private := infoMap.Get("private")
 	if private != 1 {
 		t.Errorf("Expected private to be 1 but was %v", private)
 	}
 
-	pieces, ok := infoMap["pieces"].(string)
+	pieces, ok := infoMap.Get("pieces").(string)
 	if !ok {
 		t.Errorf("Could not cast pieces to string")
 	}
@@ -120,11 +121,11 @@ func TestReadValueDictionary(t *testing.T) {
 	if err != nil {
 		t.Errorf("Simple dict value error: %v", err)
 	}
-	dictValCast, ok2 := dictVal.(map[string]interface{})
+	dictValCast, ok2 := dictVal.(*model.OrderedMap)
 	if !ok2 {
 		t.Errorf("Unable to cast dict value to map[string]interface{}")
 	}
-	if dictValCast["to"] != "a" {
+	if dictValCast.Get("to") != "a" {
 		t.Errorf("Expected dictionary to contain a single mapping of to:a but was %v", dictValCast)
 	}
 }

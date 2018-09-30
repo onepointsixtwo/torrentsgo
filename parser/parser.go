@@ -28,7 +28,7 @@ func ParseMetaInfo(reader io.Reader) (*model.MetaInfo, error) {
 
 // MetaInfo parsing
 
-func parseMetaInfoFromDecodedData(data map[string]interface{}) (*model.MetaInfo, error) {
+func parseMetaInfoFromDecodedData(data *model.OrderedMap) (*model.MetaInfo, error) {
 	announceUrls, announceUrlsError := parseAnnounceUrlsFromDecodedData(data)
 	if announceUrlsError != nil {
 		return nil, announceUrlsError
@@ -45,7 +45,7 @@ func parseMetaInfoFromDecodedData(data map[string]interface{}) (*model.MetaInfo,
 	return model.NewMetaInfo(announceUrls, creationDate, comment, createdBy, encoding, info), nil
 }
 
-func parseAnnounceUrlsFromDecodedData(data map[string]interface{}) ([]*url.URL, error) {
+func parseAnnounceUrlsFromDecodedData(data *model.OrderedMap) ([]*url.URL, error) {
 	// NOTE: this is currently not supporting the newer file extension of 'announce-list' in addition to announce,
 	// but intentionally returns array of URLs so this can easily be supported later
 	announce, err := readStringValueFromMap(data, "announce")
@@ -63,29 +63,29 @@ func parseAnnounceUrlsFromDecodedData(data map[string]interface{}) ([]*url.URL, 
 	return urls, nil
 }
 
-func parseCreationDateFromDecodedData(data map[string]interface{}) time.Time {
+func parseCreationDateFromDecodedData(data *model.OrderedMap) time.Time {
 	timestamp, _ := readIntValueFromMap(data, "creation date")
 	return time.Unix(int64(timestamp), 0)
 }
 
-func parseCommentFromDecodedData(data map[string]interface{}) string {
+func parseCommentFromDecodedData(data *model.OrderedMap) string {
 	str, _ := readStringValueFromMap(data, "comment")
 	return str
 }
 
-func parseCreatedByFromDecodedData(data map[string]interface{}) string {
+func parseCreatedByFromDecodedData(data *model.OrderedMap) string {
 	str, _ := readStringValueFromMap(data, "created by")
 	return str
 }
 
-func parseEncodingFromDecodedData(data map[string]interface{}) string {
+func parseEncodingFromDecodedData(data *model.OrderedMap) string {
 	str, _ := readStringValueFromMap(data, "encoding")
 	return str
 }
 
 // Info parsing
 
-func parseInfoFromDecodedData(data map[string]interface{}) (*model.Info, error) {
+func parseInfoFromDecodedData(data *model.OrderedMap) (*model.Info, error) {
 	infoData, err := readDictionaryValueFromMap(data, "info")
 	if err != nil {
 		return nil, err
@@ -112,27 +112,27 @@ func parseInfoFromDecodedData(data map[string]interface{}) (*model.Info, error) 
 	return model.NewInfo(pieceLength, pieces, private, files, directoryName), nil
 }
 
-func parsePieceLengthFromDecodedInfoData(infoData map[string]interface{}) (int, error) {
+func parsePieceLengthFromDecodedInfoData(infoData *model.OrderedMap) (int, error) {
 	return readIntValueFromMap(infoData, "piece length")
 }
 
-func parsePiecesDataFromDecodedInfoData(infoData map[string]interface{}) ([]byte, error) {
+func parsePiecesDataFromDecodedInfoData(infoData *model.OrderedMap) ([]byte, error) {
 	return readBytesValueFromMap(infoData, "pieces")
 }
 
-func parsePrivateFromDecodedInfoData(infoData map[string]interface{}) int {
+func parsePrivateFromDecodedInfoData(infoData *model.OrderedMap) int {
 	value, _ := readIntValueFromMap(infoData, "private")
 	return value
 }
 
-func parseFilesFromDecodedInfoData(infoData map[string]interface{}) ([]*model.File, error) {
+func parseFilesFromDecodedInfoData(infoData *model.OrderedMap) ([]*model.File, error) {
 	if isMultiFileMode(infoData) {
 		return parseMultiFileModeFilesFromDecodedInfoData(infoData)
 	}
 	return parseSingleFileModeFilesFromDecodedInfoData(infoData)
 }
 
-func parseSingleFileModeFilesFromDecodedInfoData(infoData map[string]interface{}) ([]*model.File, error) {
+func parseSingleFileModeFilesFromDecodedInfoData(infoData *model.OrderedMap) ([]*model.File, error) {
 	file, err := parseFileFromOuterMap(infoData)
 	if err != nil {
 		return nil, err
@@ -143,7 +143,7 @@ func parseSingleFileModeFilesFromDecodedInfoData(infoData map[string]interface{}
 	return files, nil
 }
 
-func parseMultiFileModeFilesFromDecodedInfoData(infoData map[string]interface{}) ([]*model.File, error) {
+func parseMultiFileModeFilesFromDecodedInfoData(infoData *model.OrderedMap) ([]*model.File, error) {
 	filesList, err := readListFromMap(infoData, "files")
 	if err != nil {
 		return nil, err
@@ -153,7 +153,7 @@ func parseMultiFileModeFilesFromDecodedInfoData(infoData map[string]interface{})
 	files := make([]*model.File, 0)
 	for i := 0; i < filesLength; i++ {
 		maybeDict := filesList[i]
-		dict, ok := maybeDict.(map[string]interface{})
+		dict, ok := maybeDict.(*model.OrderedMap)
 		if !ok {
 			continue
 		}
@@ -171,7 +171,7 @@ func parseMultiFileModeFilesFromDecodedInfoData(infoData map[string]interface{})
 	}
 }
 
-func parseFileFromOuterMap(mp map[string]interface{}) (*model.File, error) {
+func parseFileFromOuterMap(mp *model.OrderedMap) (*model.File, error) {
 	fileName, err := readStringValueFromMap(mp, "name")
 	if err != nil {
 		return nil, err
@@ -185,7 +185,7 @@ func parseFileFromOuterMap(mp map[string]interface{}) (*model.File, error) {
 	return model.NewFile(fileName, length, md5Sum), nil
 }
 
-func parseFileFromFilesMap(mp map[string]interface{}) (*model.File, error) {
+func parseFileFromFilesMap(mp *model.OrderedMap) (*model.File, error) {
 	pathList, pathErr := readListFromMap(mp, "path")
 	if pathErr != nil {
 		return nil, pathErr
@@ -224,26 +224,26 @@ func getFilePathFromList(list []interface{}) (string, error) {
 	return path, nil
 }
 
-func parseDirectoryNameFromDecodedInfoData(infoData map[string]interface{}) (string, error) {
+func parseDirectoryNameFromDecodedInfoData(infoData *model.OrderedMap) (string, error) {
 	if isMultiFileMode(infoData) {
 		return parseNameFromDecodedInfoData(infoData)
 	}
 	return "", nil
 }
 
-func isMultiFileMode(infoData map[string]interface{}) bool {
+func isMultiFileMode(infoData *model.OrderedMap) bool {
 	_, err := readIntValueFromMap(infoData, "length")
 	isMultiFile := err != nil
 	return isMultiFile
 }
 
-func parseNameFromDecodedInfoData(infoData map[string]interface{}) (string, error) {
+func parseNameFromDecodedInfoData(infoData *model.OrderedMap) (string, error) {
 	return readStringValueFromMap(infoData, "name")
 }
 
 // Helpers
-func readStringValueFromMap(m map[string]interface{}, key string) (string, error) {
-	value, exists := m[key]
+func readStringValueFromMap(m *model.OrderedMap, key string) (string, error) {
+	value, exists := m.GetExists(key)
 	if !exists {
 		return "", fmt.Errorf("String value not found in map for key %v", key)
 	}
@@ -256,8 +256,8 @@ func readStringValueFromMap(m map[string]interface{}, key string) (string, error
 	return castedValue, nil
 }
 
-func readIntValueFromMap(m map[string]interface{}, key string) (int, error) {
-	value, exists := m[key]
+func readIntValueFromMap(m *model.OrderedMap, key string) (int, error) {
+	value, exists := m.GetExists(key)
 	if !exists {
 		return 0, fmt.Errorf("Int value not found in map for key %v", key)
 	}
@@ -270,7 +270,7 @@ func readIntValueFromMap(m map[string]interface{}, key string) (int, error) {
 	return castedValue, nil
 }
 
-func readBytesValueFromMap(m map[string]interface{}, key string) ([]byte, error) {
+func readBytesValueFromMap(m *model.OrderedMap, key string) ([]byte, error) {
 	str, err := readStringValueFromMap(m, key)
 	if err != nil {
 		return nil, err
@@ -278,29 +278,29 @@ func readBytesValueFromMap(m map[string]interface{}, key string) ([]byte, error)
 	return []byte(str), nil
 }
 
-func readListFromMap(m map[string]interface{}, key string) ([]interface{}, error) {
-	value, exists := m[key]
+func readListFromMap(m *model.OrderedMap, key string) ([]interface{}, error) {
+	value, exists := m.GetExists(key)
 	if !exists {
 		return nil, fmt.Errorf("List of dictionaries value not found in map for key %v", key)
 	}
 
 	castedValue, ok := value.([]interface{})
 	if !ok {
-		return nil, fmt.Errorf("Unable to cast value %v to []map[string]interface{} (type is %v)", value, reflect.TypeOf(value))
+		return nil, fmt.Errorf("Unable to cast value %v to []*model.OrderedMap (type is %v)", value, reflect.TypeOf(value))
 	}
 
 	return castedValue, nil
 }
 
-func readDictionaryValueFromMap(m map[string]interface{}, key string) (map[string]interface{}, error) {
-	value, exists := m[key]
+func readDictionaryValueFromMap(m *model.OrderedMap, key string) (*model.OrderedMap, error) {
+	value, exists := m.GetExists(key)
 	if !exists {
 		return nil, fmt.Errorf("Dictionary value not found in map for key %v", key)
 	}
 
-	castedValue, ok := value.(map[string]interface{})
+	castedValue, ok := value.(*model.OrderedMap)
 	if !ok {
-		return nil, fmt.Errorf("Unable to cast value %v to map[string]interface{}", value)
+		return nil, fmt.Errorf("Unable to cast value %v to *model.OrderedMap", value)
 	}
 
 	return castedValue, nil

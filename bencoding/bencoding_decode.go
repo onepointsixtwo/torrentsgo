@@ -2,6 +2,7 @@ package bencoding
 
 import (
 	"fmt"
+	"github.com/onepointsixtwo/torrentsgo/model"
 	"io"
 	"strconv"
 )
@@ -14,7 +15,7 @@ const (
 	END             = "e"
 )
 
-func DecodeBencoding(reader io.Reader) (map[string]interface{}, error) {
+func DecodeBencoding(reader io.Reader) (*model.OrderedMap, error) {
 	// Since we're only supporting the outer structure being a dictionary
 	// we just  check the first byte is d and then proceed to read it in as a dictionary
 	firstChar, err := readLengthAsString(reader, 1)
@@ -51,20 +52,20 @@ func readValue(reader io.Reader) (interface{}, error) {
 
 // Dictionary decoding
 
-func decodeDictionary(reader io.Reader) (map[string]interface{}, error) {
-	dictionary := make(map[string]interface{})
+func decodeDictionary(reader io.Reader) (*model.OrderedMap, error) {
+	dictionary := model.NewOrderedMap()
 	for {
-		str, value, err := readDictionaryPair(reader)
+		key, value, err := readDictionaryPair(reader)
 		if err != nil {
 			if err == io.EOF {
 				break
 			} else {
 				return nil, err
 			}
-		} else if len(str) == 0 {
+		} else if len(key) == 0 {
 			break
 		}
-		dictionary[str] = value
+		dictionary.Add(key, value)
 	}
 	return dictionary, nil
 }
